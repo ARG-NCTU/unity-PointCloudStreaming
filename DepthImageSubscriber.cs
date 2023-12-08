@@ -14,7 +14,6 @@ limitations under the License.
 */
 using System;
 using UnityEngine;
-using Photon.Pun;
 namespace RosSharp.RosBridgeClient
 {
     [RequireComponent(typeof(RosConnector))]
