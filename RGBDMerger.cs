@@ -11,7 +11,7 @@ using OpenCvSharp;
 
 public class RGBDMerger : MonoBehaviour
 {
-    public ImageSubscriber rgbImageSub;
+    public ImageSubscriberPointCloud rgbImageSub;
     public DepthImageSubscriber depthImageSub;
 
     RosSharp.RosBridgeClient.MessageTypes.Sensor.Image rgbImage;
@@ -57,17 +57,18 @@ public class RGBDMerger : MonoBehaviour
 
     protected void DecompressRGB()
     {
-        rgb_buff = new Mat (1, rgbImageSub.ImageData.Length, MatType.CV_8UC1, rgbImageSub.ImageData);
-        rgb_img = Cv2.ImDecode(rgb_buff , ImreadModes.Color);
+        rgb_buff = new Mat(1, rgbImageSub.ImageData.Length, MatType.CV_8UC1, rgbImageSub.ImageData);
+        rgb_img = Cv2.ImDecode(rgb_buff, ImreadModes.Color);
         // Cv2.ImWrite(rgb_path, rgb_img);
         // Vec3b color = rgb_img.Get<Vec3b>(240, 320);
     }
 
     protected void DecompressDepth()
     {
-        depth_buff = new Mat (1, depthImageSub.ImageData.Length, MatType.CV_8UC1, depthImageSub.ImageData);
-        depth_img = Cv2.ImDecode(depth_buff , ImreadModes.Unchanged);
+        depth_buff = new Mat(1, depthImageSub.ImageData.Length, MatType.CV_8UC1, depthImageSub.ImageData);
+        depth_img = Cv2.ImDecode(depth_buff, ImreadModes.Unchanged);
         depth_img.ConvertTo(depth_img, MatType.CV_16UC1);
+
         // Cv2.ImWrite(depth_path, depth_img);
         // ushort depth = depth_img.Get<ushort>(240, 320);
     }
@@ -91,42 +92,79 @@ public class RGBDMerger : MonoBehaviour
         MatIndexer<Vec3b> rgb_indexer = rgb_mat.GetIndexer();
         Mat<ushort> depth_mat = new Mat<ushort>(depth_img);
         MatIndexer<ushort> depth_indexer = depth_mat.GetIndexer();
-        
+        // ushort maxVal = 0;
+
         foreach (int j in Enumerable.Range(height_start, height_end).Where(number => number % 3 == 0)/*= 0; j < height; j+=2 */ /*j+=batch_size*/)
         {
             foreach (int k in Enumerable.Range(width_start, width_end).Where(number => number % 3 == 0)/*= 0; k < width; k+=2 */ /*k+=batch_size*/)
             {
-                // Debug.Log("Sync Success " + depth_indexer[j, k]);
-                // if(depth_indexer[j, k] < depth_limit)
-                // {
-                //     PointCloudComputing(depth_indexer[j, k], k, j, 
-                //         (float)rgb_indexer[j, k][2]/255.0f, (float)rgb_indexer[j, k][1]/255.0f, (float)rgb_indexer[j, k][0]/255.0f);
-                // }
-                if(depth_indexer[j, k] < depth_limit)
+                if ( depth_indexer[j, k] == 0)
                 {
-                    z = depth_indexer[j, k] * 0.001f;
-                    x = (k - cx) / fx * z;
-                    y = (j - cy) / fy * z;
+                    depth_indexer[j, k] = (ushort)depth_limit;
+                    // Debug.Log(j + "j" + k + "k" + depth_indexer[j, k]);
 
-                    r = (float)rgb_indexer[j, k][2]/255.0f;
-                    g = (float)rgb_indexer[j, k][1]/255.0f;
-                    b = (float)rgb_indexer[j, k][0]/255.0f;
-
-                    tmp_vector3 = new Vector3(x, z, y);
-                    tmp_color = new Color(r, g, b);
-
-                    pcl.Add(tmp_vector3);
-                    pcl.Add(tmp_vector3);
-                    pcl.Add(tmp_vector3);
-                    pcl.Add(tmp_vector3);
-
-                    pcl_color.Add(tmp_color);
-                    pcl_color.Add(tmp_color);
-                    pcl_color.Add(tmp_color);
-                    pcl_color.Add(tmp_color);
                 }
+
+                z = depth_indexer[j, k] * 0.001f;
+                x = (k - cx) / fx * z;
+                y = (j - cy) / fy * z;
+
+                //if (z == 0)
+                //{
+                //    Debug.Log(j + "j" + k + "k");
+                //    Debug.Log(x + "x" + y + "y" + z + "z");
+                //}
+                
+
+                r = (float)rgb_indexer[j, k][2] / 255.0f;
+                g = (float)rgb_indexer[j, k][1] / 255.0f;
+                b = (float)rgb_indexer[j, k][0] / 255.0f;
+
+                tmp_vector3 = new Vector3(x, z, y);
+                tmp_color = new Color(r, g, b);
+
+                pcl.Add(tmp_vector3);
+                pcl.Add(tmp_vector3);
+                pcl.Add(tmp_vector3);
+                pcl.Add(tmp_vector3);
+
+                pcl_color.Add(tmp_color);
+                pcl_color.Add(tmp_color);
+                pcl_color.Add(tmp_color);
+                pcl_color.Add(tmp_color);
+
+                //if (depth_indexer[j, k] >=  depth_limit)
+                //{
+                //    Debug.Log(depth_indexer[j, k]);
+                //}
+                //if (depth_indexer[j, k] < depth_limit)
+                //{
+                //    z = depth_indexer[j, k] * 0.001f;
+                //    z = z > 25 ? 25 : z;
+                //    x = (k - cx) / fx * z;
+                //    y = (j - cy) / fy * z;
+
+                //    r = (float)rgb_indexer[j, k][2] / 255.0f;
+                //    g = (float)rgb_indexer[j, k][1] / 255.0f;
+                //    b = (float)rgb_indexer[j, k][0] / 255.0f;
+
+                //    tmp_vector3 = new Vector3(x, z, y);
+                //    tmp_color = new Color(r, g, b);
+
+                //    pcl.Add(tmp_vector3);
+                //    pcl.Add(tmp_vector3);
+                //    pcl.Add(tmp_vector3);
+                //    pcl.Add(tmp_vector3);
+
+                //    pcl_color.Add(tmp_color);
+                //    pcl_color.Add(tmp_color);
+                //    pcl_color.Add(tmp_color);
+                //    pcl_color.Add(tmp_color);
+                //}
             }
         }
+        // Debug.Log(pcl.Count);
+        // Debug.Log(pcl_color.Count);
     }
 
     public Vector3[] GetPCL(int index)
