@@ -11,7 +11,7 @@ using OpenCvSharp;
 
 public class RGBDMergerDecrease : MonoBehaviour
 {
-    public ImageSubscriber rgbImageSub;
+    public ImageSubscriberPointCloud rgbImageSub;
     public DepthImageSubscriber depthImageSub;
 
     RosSharp.RosBridgeClient.MessageTypes.Sensor.Image rgbImage;
